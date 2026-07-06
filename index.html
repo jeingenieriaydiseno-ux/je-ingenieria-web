@@ -489,7 +489,7 @@
         let cur = 0;
         const step = Math.max(1, target / 30);
         const t = setInterval(() => {
-          cur += step;
+          cur += step; if (cur >= target) { cur = target; clearInterval(t); }
           el.textContent = Math.round(cur);
         }, 30);
         cio.unobserve(el);
