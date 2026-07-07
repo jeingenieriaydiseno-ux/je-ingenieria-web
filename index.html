@@ -44,7 +44,7 @@
     font-size:13px;
     margin-bottom:14px;
   }
-  .section-title{font-size:clamp(26px,4vw,38px);font-weight:800;margin-bottom:18px;}
+  .section-title{font-size:clamp(26px,4vw,38px);font-weight:800;margin-bottom:18px;}.section-title .ribbon{display:inline-block;background:linear-gradient(120deg,var(--orange) 0%,var(--navy-2) 100%);color:#fff;padding:3px 26px 5px 14px;clip-path:polygon(0 0,100% 0,88% 100%,0 100%);margin-left:2px;}.hex-cluster{position:absolute;top:0;right:0;width:280px;height:100%;pointer-events:none;overflow:hidden;z-index:1;}.hex-cluster .hex{position:absolute;clip-path:polygon(25% 0%,75% 0%,100% 50%,75% 100%,25% 100%,0% 50%);border:1.5px solid rgba(255,125,51,.22);}.hex-cluster .hex.h1{width:90px;height:104px;top:8%;right:10px;}.hex-cluster .hex.h2{width:56px;height:65px;top:34%;right:96px;border-color:rgba(255,255,255,.14);}.hex-cluster .hex.h3{width:130px;height:150px;bottom:2%;right:-40px;border-color:rgba(255,125,51,.14);}.hex-cluster .hex.h4{width:40px;height:46px;top:6%;right:150px;border-color:rgba(255,255,255,.1);}
   .section-sub{max-width:680px;color:var(--grey);font-size:16px;margin-bottom:40px;}
   .btn{
     display:inline-flex;
@@ -292,7 +292,7 @@
 </header>
 
 <section id="inicio">
-  <div class="container hero-grid">
+  <div class="hex-cluster"><span class="hex h1"></span><span class="hex h2"></span><span class="hex h3"></span><span class="hex h4"></span></div><div class="container hero-grid">
     <div>
       <span class="hero-tag">Puerto Gaitán · Meta · Colombia</span>
       <h1>Ingeniería mecánica de <span>precisión</span> para la industria petrolera y agroindustrial</h1>
@@ -328,7 +328,7 @@
 <section id="servicios" class="section">
   <div class="container">
     <span class="eyebrow reveal">Catálogo</span>
-    <h2 class="section-title reveal">Servicios</h2>
+    <h2 class="section-title reveal"><span class="ribbon">Servicios</span></h2>
     
 
     <div class="tabs reveal">
@@ -363,7 +363,7 @@
 <section id="segmentos" class="section section-alt">
   <div class="container">
     <span class="eyebrow reveal">Clientes</span>
-    <h2 class="section-title reveal">A quién servimos</h2>
+    <h2 class="section-title reveal">A quién <span class="ribbon">servimos</span></h2>
     <p class="section-sub reveal">Dos sectores con necesidades técnicas puntuales que rara vez justifican un cargo de planta.</p>
     <div class="seg-grid">
       <div class="seg-card reveal"><div class="seg-icon">⛏</div><h4>Contratistas de mantenimiento mecánico</h4><p>Sector petrolero en Puerto Gaitán y el Meta — campos Rubiales, Caño Sur y Quifa.</p></div>
@@ -376,7 +376,7 @@
 <section id="trabajamos" class="section">
   <div class="container">
     <span class="eyebrow reveal">Proceso</span>
-    <h2 class="section-title reveal">Cómo trabajamos</h2>
+    <h2 class="section-title reveal">Cómo <span class="ribbon">trabajamos</span></h2>
     <p class="section-sub reveal">Un proceso simple y trazable, de la medición a la entrega.</p>
     <div class="seg-grid">
       <div class="seg-card reveal"><div class="seg-icon">📏</div><h4>1. Medimos</h4><p>Metrología dimensional en sitio con calibrador y micrómetro.</p></div>
@@ -390,7 +390,7 @@
 <section id="contacto" class="section">
   <div class="container">
     <span class="eyebrow reveal">Hablemos</span>
-    <h2 class="section-title reveal">Contacto</h2>
+    <h2 class="section-title reveal"><span class="ribbon">Contacto</span></h2>
     <p class="section-sub reveal">Cuéntenos qué necesita resolver — respondemos directo, sin intermediarios.</p>
     <div class="contact-wrap">
       <div class="contact-list reveal">
