@@ -145,7 +145,7 @@ nav a.nav-link.active{color:var(--orange);background:var(--orange-soft);}
   -webkit-mask-composite:source-in;
 }
 .hero-video video{
-  width:100%;height:100%;object-fit:cover;object-position:50% 50%;
+  position:absolute;left:0;top:11%;width:100%;height:78%;object-fit:cover;object-position:50% 50%;
   filter:invert(1) hue-rotate(180deg) contrast(1.2) saturate(1.3);
   mix-blend-mode:screen;opacity:.8;
 }
