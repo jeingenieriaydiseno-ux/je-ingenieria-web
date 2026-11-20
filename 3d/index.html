@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="../images/favicon.png">
+<title>Prototipo 3D · JE Ingeniería &amp; Diseño</title>
+<style>
+  :root{--navy:#10244B;--orange:#E8631A;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;overflow:hidden;
+    background:radial-gradient(900px 600px at 50% 40%,#ffffff,#dfe5f1 70%);
+    color:var(--navy);transition:background .5s ease,color .5s ease;
+  }
+  body.dark{background:radial-gradient(900px 600px at 50% 40%,#16305f,#060f21 72%);color:#fff;}
+  #stage{position:fixed;inset:0;cursor:grab;touch-action:none;}
+  #stage.drag{cursor:grabbing;}
+  #stage canvas{display:block;width:100%;height:100%;}
+  .shadow{
+    position:fixed;left:50%;bottom:14%;width:min(560px,70vw);height:36px;transform:translateX(-50%);
+    background:radial-gradient(ellipse at center,rgba(6,15,33,.38),transparent 70%);filter:blur(6px);pointer-events:none;
+  }
+  body.dark .shadow{background:radial-gradient(ellipse at center,rgba(0,0,0,.6),transparent 70%);}
+  .ui{position:fixed;top:16px;left:16px;right:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;z-index:2;}
+  .ui button,.ui a{
+    font:600 13px system-ui,sans-serif;padding:10px 16px;border-radius:999px;border:1px solid rgba(16,36,75,.18);cursor:pointer;
+    background:rgba(255,255,255,.75);color:var(--navy);backdrop-filter:blur(8px);text-decoration:none;transition:background .2s,transform .2s;
+  }
+  body.dark .ui button,body.dark .ui a{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.22);}
+  .ui button:hover,.ui a:hover{transform:translateY(-2px);}
+  .ui button[aria-pressed="true"]{background:var(--orange);color:#fff;border-color:transparent;}
+  .hint{position:fixed;left:0;right:0;bottom:18px;text-align:center;font-size:13px;opacity:.65;pointer-events:none;padding:0 16px;}
+  .err{position:fixed;inset:0;display:none;place-items:center;text-align:center;padding:24px;font-size:15px;}
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="stage" aria-label="Monograma JE en 3D. Arrastra para girarlo."></div>
+<div class="shadow"></div>
+<div class="ui">
+  <button id="btnTheme" type="button">Fondo oscuro</button>
+  <button id="btnSpin" type="button" aria-pressed="false">Giro automático</button>
+  <button id="btnWord" type="button" aria-pressed="true">Nombre</button>
+  <button id="btnReset" type="button">Reiniciar</button>
+</div>
+<p class="hint">Prototipo · arrastra para girar · doble clic para reiniciar</p>
+<div class="err" id="err">No se pudo cargar el 3D. Verifica tu conexión e inténtalo de nuevo.</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const stage = document.getElementById('stage');
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+stage.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+const camera = new THREE.PerspectiveCamera(30, 1, 10, 6000);
+
+const key = new THREE.DirectionalLight(0xffffff, 1.6);
+key.position.set(-400, 600, 900);
+scene.add(key);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8899bb, 0.5));
+
+// ---- geometry from DXF contours (x, y, bulge) ----
+function tessellate(c) {
+  const pts = [], n = c.length;
+  for (let i = 0; i < n; i++) {
+    const [x1, y1, b] = c[i];
+    const [x2, y2] = c[(i + 1) % n];
+    pts.push(new THREE.Vector2(x1, y1));
+    if (Math.abs(b) > 1e-4) {
+      const dx = x2 - x1, dy = y2 - y1, d = Math.hypot(dx, dy);
+      const off = (d / 2) * (1 - b * b) / (2 * b);
+      const cx = (x1 + x2) / 2 + (-dy / d) * off;
+      const cy = (y1 + y2) / 2 + (dx / d) * off;
+      const r = Math.hypot(x1 - cx, y1 - cy);
+      const a1 = Math.atan2(y1 - cy, x1 - cx);
+      const theta = 4 * Math.atan(b);
+      const steps = Math.max(2, Math.ceil(Math.abs(theta) / (Math.PI / 40)));
+      for (let k = 1; k < steps; k++) {
+        const a = a1 + theta * k / steps;
+        pts.push(new THREE.Vector2(cx + r * Math.cos(a), cy + r * Math.sin(a)));
+      }
+    }
+  }
+  return pts;
+}
+
+function inside(pt, poly) {
+  let ins = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const a = poly[i], b = poly[j];
+    if ((a.y > pt.y) !== (b.y > pt.y) && pt.x < (b.x - a.x) * (pt.y - a.y) / (b.y - a.y) + a.x) ins = !ins;
+  }
+  return ins;
+}
+
+function area(p) {
+  let s = 0;
+  for (let i = 0, j = p.length - 1; i < p.length; j = i++) s += (p[j].x * p[i].y - p[i].x * p[j].y);
+  return Math.abs(s / 2);
+}
+
+const palette = {
+  light: { navy: 0x011c4c, orange: 0xfd4c0c },
+  dark:  { navy: 0x4f7bd0, orange: 0xff5a1c }
+};
+const matNavy = new THREE.MeshStandardMaterial({ color: palette.light.navy, metalness: 0.45, roughness: 0.32, envMapIntensity: 1.3 });
+const matOrange = new THREE.MeshStandardMaterial({ color: palette.light.orange, metalness: 0.25, roughness: 0.3, envMapIntensity: 1.2 });
+
+const logo = new THREE.Group();   // rotates
+const holder = new THREE.Group(); // centers
+const markGroup = new THREE.Group(); // J + E
+const wordGroup = new THREE.Group(); // texto + compás + separador
+holder.add(markGroup, wordGroup);
+logo.add(holder);
+scene.add(logo);
+
+const matGrey = new THREE.MeshStandardMaterial({ color: 0xd5d5d5, metalness: 0.2, roughness: 0.4 });
+const isOrangeX = cx => (cx > 400 && cx < 700) || (cx > 1300 && cx < 1430);
+const isMarkX = cx => cx < 760;
+
+async function build() {
+  const data = await (await fetch('logo-full.json')).json();
+  const items = data.map(c => {
+    const pts = tessellate(c);
+    return { pts, area: area(pts), cx: c.reduce((s, v) => s + v[0], 0) / c.length };
+  });
+
+  items.forEach((it, i) => {
+    it.depth = 0;
+    items.forEach((ot, j) => { if (i !== j && ot.area > it.area && inside(it.pts[0], ot.pts)) it.depth++; });
+  });
+
+  items.filter(it => it.depth % 2 === 0).forEach(outer => {
+    const shape = new THREE.Shape(outer.pts);
+    items.filter(h => h.depth === outer.depth + 1 && h.area < outer.area && inside(h.pts[0], outer.pts))
+         .forEach(h => shape.holes.push(new THREE.Path(h.pts)));
+    const mark = isMarkX(outer.cx);
+    const geo = new THREE.ExtrudeGeometry(shape, mark
+      ? { depth: 46, bevelEnabled: true, bevelThickness: 4, bevelSize: 3, bevelSegments: 3, curveSegments: 1 }
+      : { depth: 26, bevelEnabled: true, bevelThickness: 1.6, bevelSize: 1.2, bevelSegments: 2, curveSegments: 1 });
+    const mesh = new THREE.Mesh(geo, isOrangeX(outer.cx) ? matOrange : matNavy);
+    if (mark) markGroup.add(mesh); else { mesh.position.z = 10; wordGroup.add(mesh); }
+  });
+
+  // línea separadora (en el DXF no viene como contorno)
+  const sep = new THREE.Mesh(new THREE.BoxGeometry(3, 257, 4), matGrey);
+  sep.position.set(752, 197.5, 23);
+  wordGroup.add(sep);
+
+  applyLayout();
+}
+
+let showWord = true;
+const BOUNDS = { full: { cx: 891, w: 1760 }, mark: { cx: 363.5, w: 700 } };
+let contentW = BOUNDS.full.w;
+function applyLayout() {
+  const b = showWord ? BOUNDS.full : BOUNDS.mark;
+  wordGroup.visible = showWord;
+  holder.position.set(-b.cx, -225.5, -23);
+  contentW = b.w;
+  resize();
+}
+
+// ---- interaction ----
+const BASE_YAW = 0.26, BASE_PITCH = 0.15;   // leve inclinación para ver el volumen
+let yaw = BASE_YAW, pitch = BASE_PITCH, vel = 0, dragging = false, lastX = 0, lastY = 0;
+let px = 0, py = 0, spin = false;
+
+stage.addEventListener('pointerdown', e => { dragging = true; lastX = e.clientX; lastY = e.clientY; vel = 0; stage.classList.add('drag'); stage.setPointerCapture(e.pointerId); });
+stage.addEventListener('pointermove', e => {
+  const r = stage.getBoundingClientRect();
+  px = (e.clientX - r.left) / r.width * 2 - 1;
+  py = (e.clientY - r.top) / r.height * 2 - 1;
+  if (dragging) { const dx = e.clientX - lastX; yaw += dx * 0.012; vel = dx * 0.012; pitch += (e.clientY - lastY) * 0.006; pitch = Math.max(-0.6, Math.min(0.6, pitch)); lastX = e.clientX; lastY = e.clientY; }
+});
+const endDrag = () => { dragging = false; stage.classList.remove('drag'); };
+stage.addEventListener('pointerup', endDrag);
+stage.addEventListener('pointercancel', endDrag);
+function reset() { yaw = BASE_YAW; pitch = BASE_PITCH; vel = 0; }
+stage.addEventListener('dblclick', reset);
+document.getElementById('btnReset').addEventListener('click', reset);
+
+const btnSpin = document.getElementById('btnSpin');
+btnSpin.addEventListener('click', () => { spin = !spin; btnSpin.setAttribute('aria-pressed', String(spin)); });
+
+const btnWord = document.getElementById('btnWord');
+btnWord.addEventListener('click', () => {
+  showWord = !showWord;
+  btnWord.setAttribute('aria-pressed', String(showWord));
+  applyLayout();
+});
+
+const btnTheme = document.getElementById('btnTheme');
+btnTheme.addEventListener('click', () => {
+  const dark = document.body.classList.toggle('dark');
+  const p = dark ? palette.dark : palette.light;
+  matNavy.color.setHex(p.navy);
+  matOrange.color.setHex(p.orange);
+  matGrey.color.setHex(dark ? 0x9fb3d1 : 0xd5d5d5);
+  btnTheme.textContent = dark ? 'Fondo claro' : 'Fondo oscuro';
+});
+
+// ---- layout ----
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  const t = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  const dist = Math.max((430 / 2) / t, (contentW / 2) / (t * camera.aspect)) * 1.3;
+  camera.position.set(0, 0, dist);
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+
+// ---- loop ----
+const clock = new THREE.Clock();
+function frame() {
+  const t = clock.getElapsedTime();
+  if (!dragging) {
+    yaw += vel; vel *= 0.94;
+    if (spin && !reduceMotion) {
+      yaw += 0.012;
+    } else {
+      const wrapped = Math.atan2(Math.sin(yaw), Math.cos(yaw));
+      const sway = reduceMotion ? 0 : Math.sin(t * 0.6) * 0.14;
+      const target = BASE_YAW + sway + (reduceMotion ? 0 : px * 0.3);
+      yaw = wrapped + (target - wrapped) * 0.06;
+    }
+    const pt = BASE_PITCH + (reduceMotion ? 0 : py * 0.14);
+    pitch += (pt - pitch) * 0.06;
+  }
+  logo.rotation.set(pitch, yaw, 0);
+  logo.position.y = reduceMotion ? 0 : Math.sin(t * 1.1) * 6;
+  renderer.render(scene, camera);
+  if (!document.hidden) requestAnimationFrame(frame); else document.addEventListener('visibilitychange', () => requestAnimationFrame(frame), { once: true });
+}
+
+build().then(() => { resize(); frame(); }).catch(err => {
+  console.error(err);
+  const e = document.getElementById('err'); e.style.display = 'grid';
+});
+</script>
+</body>
+</html>
