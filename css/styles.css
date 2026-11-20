@@ -98,8 +98,12 @@ header .container{pointer-events:auto;}
 }
 header.scrolled .nav-shell{background:rgba(255,255,255,.92);padding:7px 12px 7px 18px;box-shadow:0 12px 36px -12px rgba(6,15,33,.45);}
 .logo{display:flex;align-items:center;}
-.logo-img{height:62px;width:auto;transition:height .3s ease;}
-header.scrolled .logo-img{height:50px;}
+.logo-img{height:66px;width:auto;transition:height .3s ease;}
+header.scrolled .logo-img{height:52px;}
+@media(max-width:640px){
+  .logo-img{height:46px;}
+  header.scrolled .logo-img{height:40px;}
+}
 nav ul{display:flex;gap:6px;}
 nav a.nav-link{
   display:block;white-space:nowrap;color:var(--navy);font-weight:500;font-size:14.5px;
