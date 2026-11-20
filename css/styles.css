@@ -90,13 +90,13 @@ header .container{pointer-events:auto;}
 .nav-shell{
   display:flex;align-items:center;justify-content:space-between;gap:24px;
   padding:10px 14px 10px 20px;border-radius:20px;
-  background:rgba(255,255,255,.78);
+  background:rgba(255,255,255,.95);
   backdrop-filter:blur(18px) saturate(1.6);-webkit-backdrop-filter:blur(18px) saturate(1.6);
   border:1px solid rgba(255,255,255,.7);
   box-shadow:0 8px 30px -10px rgba(6,15,33,.35),inset 0 1px 0 rgba(255,255,255,.8);
   transition:padding .3s ease,box-shadow .3s ease,background .3s ease;
 }
-header.scrolled .nav-shell{background:rgba(255,255,255,.92);padding:7px 12px 7px 18px;box-shadow:0 12px 36px -12px rgba(6,15,33,.45);}
+header.scrolled .nav-shell{background:rgba(255,255,255,.98);padding:7px 12px 7px 18px;box-shadow:0 12px 36px -12px rgba(6,15,33,.45);}
 .logo{display:flex;align-items:center;}
 .logo-img{height:66px;width:auto;transition:height .3s ease;}
 header.scrolled .logo-img{height:52px;}
