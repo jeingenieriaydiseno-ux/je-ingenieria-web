@@ -185,7 +185,7 @@ function applyLayout() {
 // ---- interaction ----
 const BASE_YAW = 0.26, BASE_PITCH = 0.15;   // leve inclinación para ver el volumen
 let yaw = BASE_YAW, pitch = BASE_PITCH, vel = 0, dragging = false, lastX = 0, lastY = 0;
-let px = 0, py = 0, spin = !reduceMotion;   // gira por defecto, como un plato giratorio
+let px = 0, py = 0, spin = true;             // gira por defecto, como un plato giratorio (el botón lo pausa)
 const SPIN_SPEED = 0.55;                      // rad/s (~11 s por vuelta)
 
 stage.addEventListener('pointerdown', e => { dragging = true; lastX = e.clientX; lastY = e.clientY; vel = 0; stage.classList.add('drag'); stage.setPointerCapture(e.pointerId); });
@@ -244,7 +244,7 @@ function frame() {
   const t = now / 1000;
   if (!dragging) {
     yaw += vel; vel *= 0.94;
-    if (spin && !reduceMotion) {
+    if (spin) {
       yaw += SPIN_SPEED * dt;
     } else {
       const wrapped = Math.atan2(Math.sin(yaw), Math.cos(yaw));
